@@ -1,0 +1,2147 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#fcfbf9] text-stone-900 font-sans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Furniture Co. - Operations & Decision Intelligence</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        walnut: {
+                            50: '#fdfbf7',
+                            100: '#f7f2ea',
+                            200: '#ece1d1',
+                            500: '#8c6d53',
+                            600: '#6b4c35',
+                            700: '#543b28',
+                            800: '#422e1f',
+                            900: '#2d1e13',
+                        },
+                        forest: {
+                            700: '#2c4a38',
+                            800: '#1e3527',
+                        },
+                        terracotta: {
+                            600: '#b8533c',
+                            700: '#993f2b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        serif: ['Georgia', 'Cambria', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- PapaParse CDN for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f4f1ea;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d6cebf;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b5a994;
+        }
+        .executive-card {
+            background: #ffffff;
+            border: 1px solid #e7e2d7;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        }
+        .executive-card:hover {
+            border-color: #d6cebf;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col bg-[#faf9f5] text-stone-900 overflow-x-hidden antialiased font-sans selection:bg-walnut-200 selection:text-walnut-900">
+
+    <header class="border-b border-stone-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-30 px-6 lg:px-12 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <div class="h-9 w-9 rounded-lg bg-walnut-600 flex items-center justify-center text-white font-serif font-bold text-lg shadow-sm">
+                M
+            </div>
+            <div>
+                <h1 class="text-base font-bold tracking-tight text-stone-900">Modern Furniture Co.</h1>
+                <p class="text-xs text-stone-500 font-medium tracking-wide uppercase text-[10px]">Operations & Decision Intelligence</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <!-- Active Datasets Status Pill -->
+            <div id="active-datasets-pill" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-md bg-stone-100 border border-stone-200 text-xs font-medium text-stone-700">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-walnut-600"></i>
+                <span id="active-datasets-count">0 Datasets Loaded</span>
+            </div>
+
+            <!-- Global Tools Buttons -->
+            <button onclick="toggleModal('explorer-modal')" class="hidden md:inline-flex items-center space-x-1.5 text-stone-600 hover:text-stone-900 text-xs font-medium px-3 py-1.5 rounded-md border border-stone-200 hover:border-stone-300 transition-colors">
+                <i data-lucide="table" class="w-3.5 h-3.5"></i>
+                <span>Explore Raw Data</span>
+            </button>
+            <button onclick="toggleModal('custom-chart-modal')" class="hidden md:inline-flex items-center space-x-1.5 text-stone-600 hover:text-stone-900 text-xs font-medium px-3 py-1.5 rounded-md border border-stone-200 hover:border-stone-300 transition-colors">
+                <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+                <span>Custom Chart Builder</span>
+            </button>
+
+            <!-- Upload Button in Header -->
+            <button onclick="triggerFileInput()" class="inline-flex items-center space-x-2 bg-walnut-600 hover:bg-walnut-700 text-white text-xs font-semibold px-4 py-2 rounded-md shadow-sm transition-all active:scale-95 cursor-pointer">
+                <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                <span>Upload CSV Data</span>
+            </button>
+            <input type="file" id="csv-file-input" accept=".csv" multiple class="hidden" onchange="handleFileSelect(event)">
+        </div>
+    </header>
+
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Main Scrollable Executive Single Page Layout -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-6 lg:px-12 py-8 space-y-10">
+
+        <div id="global-no-data-banner" class="executive-card rounded-xl p-10 lg:p-16 text-center max-w-2xl mx-auto my-12 border border-stone-200">
+            <div class="w-14 h-14 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center mx-auto mb-4 text-walnut-600">
+                <i data-lucide="file-spreadsheet" class="w-7 h-7"></i>
+            </div>
+            <h2 class="text-xl font-bold text-stone-900 mb-2">Upload Modern Furniture Co. Data</h2>
+            <p class="text-xs text-stone-500 max-w-md mx-auto mb-6 leading-relaxed">
+                Add operational or financial CSV files to generate verified executive metrics, production insights, and evidence-based decisions.
+            </p>
+            <div class="flex items-center justify-center gap-3">
+                <button onclick="triggerFileInput()" class="inline-flex items-center space-x-2 bg-walnut-600 hover:bg-walnut-700 text-white font-semibold text-xs px-5 py-2.5 rounded-md shadow-sm transition-all cursor-pointer">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Select Local CSV Files</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="dashboard-tab-content" class="space-y-10 hidden">
+
+            <!-- Domain Classification Badge Banner -->
+            <div class="executive-card rounded-xl p-6 border-l-4 border-l-walnut-600 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div class="space-y-1.5">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Detected Domain Context</span>
+                        <span id="domain-badge" class="px-2.5 py-0.5 rounded text-xs font-semibold bg-stone-100 text-stone-800 border border-stone-200">
+                            Analyzing Data...
+                        </span>
+                    </div>
+                    <h2 id="workspace-summary-title" class="text-xl font-bold text-stone-900 tracking-tight">Executive Operations Brief</h2>
+                    <p id="workspace-summary-desc" class="text-xs text-stone-500 max-w-2xl">Verified metrics calculated from loaded operational records.</p>
+                </div>
+
+                <!-- Scope controls & Quick Dataset Meta Stats -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div class="p-1 bg-stone-100 rounded-md border border-stone-200 flex items-center space-x-1">
+                        <button id="scope-btn-merged" onclick="setScope('merged')" class="py-1 px-3 text-xs font-semibold rounded text-white bg-walnut-600 shadow-sm transition-all text-center">Combined Scope</button>
+                        <button id="scope-btn-selected" onclick="setScope('selected')" class="py-1 px-3 text-xs font-semibold rounded text-stone-600 hover:text-stone-900 transition-all text-center">Active Dataset</button>
+                    </div>
+
+                    <div class="flex items-center space-x-4 text-xs text-stone-500 bg-stone-50 px-4 py-2 rounded-md border border-stone-200">
+                        <div>
+                            <span class="block font-bold text-stone-900 text-sm" id="meta-total-rows">0</span>
+                            <span class="text-[10px] text-stone-400">Total Records</span>
+                        </div>
+                        <div class="h-6 w-px bg-stone-200"></div>
+                        <div>
+                            <span class="block font-bold text-stone-900 text-sm" id="meta-numeric-cols">0</span>
+                            <span class="text-[10px] text-stone-400" id="meta-numeric-label">Metrics</span>
+                        </div>
+                        <div class="h-6 w-px bg-stone-200"></div>
+                        <div>
+                            <span class="block font-bold text-stone-900 text-sm" id="meta-categorical-cols">0</span>
+                            <span class="text-[10px] text-stone-400" id="meta-categorical-label">Dimensions</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 1 — Executive Summary KPIs -->
+            <section class="space-y-4">
+                <div class="flex items-center justify-between border-b border-stone-200 pb-3">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-stone-700 flex items-center space-x-2">
+                        <span>Executive Key Metrics</span>
+                    </h2>
+                    <span class="text-xs text-stone-400">Verified Operational Data</span>
+                </div>
+                <div id="dynamic-kpi-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Dynamic KPI cards inserted via JS -->
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <div class="flex items-center justify-between border-b border-stone-200 pb-3">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-stone-700">Business Operations Performance</h2>
+                    <span class="text-xs text-stone-400">Asymmetric Analysis View</span>
+                </div>
+
+                <!-- Asymmetric Chart Layout Grid (62% / 38% desktop breakdown) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Left Chart (~62% width on desktop) -->
+                    <div class="lg:col-span-7 executive-card rounded-xl p-6 flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4 border-b border-stone-100 pb-3">
+                            <div>
+                                <h3 id="chart-1-title" class="text-sm font-bold text-stone-900">Order Lifecycle Distribution</h3>
+                                <p id="chart-1-subtitle" class="text-xs text-stone-500">Volume distribution across order fulfillment states</p>
+                            </div>
+                        </div>
+                        <div class="h-72 relative w-full">
+                            <canvas id="dynamicChart1"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Right Chart (~38% width on desktop) -->
+                    <div class="lg:col-span-5 executive-card rounded-xl p-6 flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4 border-b border-stone-100 pb-3">
+                            <div>
+                                <h3 id="chart-2-title" class="text-sm font-bold text-stone-900">Performance by Product Line</h3>
+                                <p id="chart-2-subtitle" class="text-xs text-stone-500">Delivered vs lost order distribution</p>
+                            </div>
+                        </div>
+                        <div class="h-72 relative w-full flex items-center justify-center">
+                            <canvas id="dynamicChart2"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <div class="flex items-center justify-between border-b border-stone-200 pb-3">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-stone-700">Verified Operational Signals</h2>
+                    <span class="text-xs text-stone-400">Evidence Summaries</span>
+                </div>
+
+                <div id="management-signals-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Signal 1 -->
+                    <div class="executive-card rounded-xl p-4 space-y-2 border-stone-200">
+                        <div class="flex items-center justify-between text-xs font-semibold text-stone-500">
+                            <span>Conversion Efficiency</span>
+                            <span class="w-2 h-2 rounded-full bg-walnut-600"></span>
+                        </div>
+                        <p id="signal-1-evidence" class="text-xs font-bold text-stone-900">Order Acceptance Ratio</p>
+                        <p id="signal-1-relevance" class="text-[11px] text-stone-500 leading-relaxed">
+                            Indicates overall quote conversion efficiency across inquiry logs.
+                        </p>
+                    </div>
+
+                    <!-- Signal 2 -->
+                    <div class="executive-card rounded-xl p-4 space-y-2 border-stone-200">
+                        <div class="flex items-center justify-between text-xs font-semibold text-stone-500">
+                            <span>Fulfillment Reliability</span>
+                            <span class="w-2 h-2 rounded-full bg-forest-700"></span>
+                        </div>
+                        <p id="signal-2-evidence" class="text-xs font-bold text-stone-900">On-Time Delivery Rate</p>
+                        <p id="signal-2-relevance" class="text-[11px] text-stone-500 leading-relaxed">
+                            Shows the share of completed orders delivered on time based on recorded delivery outcomes.
+                        </p>
+                    </div>
+
+                    <!-- Signal 3 -->
+                    <div class="executive-card rounded-xl p-4 space-y-2 border-stone-200">
+                        <div class="flex items-center justify-between text-xs font-semibold text-stone-500">
+                            <span>Shop Floor Load</span>
+                            <span class="w-2 h-2 rounded-full bg-amber-600"></span>
+                        </div>
+                        <p id="signal-3-evidence" class="text-xs font-bold text-stone-900">Work In Progress (WIP)</p>
+                        <p id="signal-3-relevance" class="text-[11px] text-stone-500 leading-relaxed">
+                            Represents active custom manufacturing queue currently in production stages.
+                        </p>
+                    </div>
+
+                    <!-- Signal 4 -->
+                    <div class="executive-card rounded-xl p-4 space-y-2 border-stone-200">
+                        <div class="flex items-center justify-between text-xs font-semibold text-stone-500">
+                            <span>Revenue Exposure</span>
+                            <span class="w-2 h-2 rounded-full bg-terracotta-600"></span>
+                        </div>
+                        <p id="signal-4-evidence" class="text-xs font-bold text-stone-900">Lost Quoted Opportunity</p>
+                        <p id="signal-4-relevance" class="text-[11px] text-stone-500 leading-relaxed">
+                            Quantifies total quoted pipeline value lost to unaccepted customer inquiries.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="assistant-tab-content" class="space-y-4">
+                <div class="flex items-center justify-between border-b border-stone-200 pb-3">
+                    <div>
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-stone-700">Executive Decision Assistant</h2>
+                        <p class="text-xs text-stone-500">Formulate strategic evaluation matrices grounded strictly in uploaded dataset evidence.</p>
+                    </div>
+                </div>
+
+                <div class="executive-card rounded-xl p-6 space-y-6">
+                    <!-- Suggested Executive Questions Chips -->
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-bold text-stone-500 uppercase tracking-wider">Suggested Management Enquiries</label>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="setPromptAndRun('Why are deliveries late?')" class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-xs text-stone-700 font-medium rounded-md transition-colors border border-stone-200">
+                                Why are deliveries late?
+                            </button>
+                            <button onclick="setPromptAndRun('Should management accept more customer orders right now?')" class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-xs text-stone-700 font-medium rounded-md transition-colors border border-stone-200">
+                                Should management accept more customer orders right now?
+                            </button>
+                            <button onclick="setPromptAndRun('Which product categories have the highest lost quoted value?')" class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-xs text-stone-700 font-medium rounded-md transition-colors border border-stone-200">
+                                Which product categories have the highest lost quoted value?
+                            </button>
+                            <button onclick="setPromptAndRun('What is affecting profitability?')" class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-xs text-stone-700 font-medium rounded-md transition-colors border border-stone-200">
+                                What is affecting profitability?
+                            </button>
+                            <button onclick="setPromptAndRun('Is workforce capacity a concern?')" class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-xs text-stone-700 font-medium rounded-md transition-colors border border-stone-200">
+                                Is workforce capacity a concern?
+                            </button>
+                            <button onclick="setPromptAndRun('What should management investigate next?')" class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-xs text-stone-700 font-medium rounded-md transition-colors border border-stone-200">
+                                What should management investigate next?
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Prompt Input Area -->
+                    <div class="space-y-3">
+                        <div class="relative">
+                            <textarea id="ai-query-input" rows="3" class="w-full bg-stone-50 border border-stone-300 rounded-lg p-3.5 text-xs sm:text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-walnut-600 transition-colors" placeholder="Type a custom strategic question or select a template above to evaluate your loaded datasets..."></textarea>
+                            <button onclick="runDecisionAssistant()" id="ai-submit-btn" class="absolute bottom-3 right-3 bg-walnut-600 hover:bg-walnut-700 text-white font-semibold text-xs px-4 py-2 rounded-md shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                                <span>Synthesize Decision Matrix</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Assistant Output Matrix Display -->
+                    <div id="ai-output-container" class="space-y-4 pt-2 border-t border-stone-100">
+                        <!-- Default placeholder state -->
+                        <div id="ai-placeholder" class="text-center py-8 bg-stone-50/50 rounded-lg border border-stone-200">
+                            <i data-lucide="compass" class="w-7 h-7 text-stone-400 mx-auto mb-2"></i>
+                            <p class="text-xs font-semibold text-stone-600">Decision synthesis workspace ready</p>
+                            <p class="text-[11px] text-stone-400 mt-0.5">Select a management query above to synthesize evidence-based actions.</p>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div id="ai-loading" class="hidden space-y-4 py-6">
+                            <div class="flex items-center space-x-3 text-walnut-700 text-xs font-semibold animate-pulse">
+                                <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                                <span>Evaluating operational evidence and structuring decision matrix...</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="h-24 bg-stone-100 rounded-lg border border-stone-200 animate-pulse"></div>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Decision Cards generated here -->
+                        <div id="ai-cards-wrapper" class="space-y-4 hidden"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-4 pt-4 border-t border-stone-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-stone-700">Loaded Dataset Management</h2>
+                        <p class="text-xs text-stone-500">Active data sources contributing to executive calculations.</p>
+                    </div>
+                    <button onclick="clearWorkspace()" title="Clear all datasets" class="text-xs text-stone-500 hover:text-terracotta-700 transition-colors flex items-center space-x-1 font-medium">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <span>Clear All Data</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    <!-- Dropzone Chip -->
+                    <div id="drop-zone" 
+                         onclick="triggerFileInput()"
+                         ondragover="handleDragOver(event)" 
+                         ondragleave="handleDragLeave(event)" 
+                         ondrop="handleDrop(event)"
+                         class="border-2 border-dashed border-stone-300 hover:border-walnut-600 bg-stone-50/50 hover:bg-stone-100/50 rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-1">
+                        <i data-lucide="plus-circle" class="w-5 h-5 text-walnut-600"></i>
+                        <span class="text-xs font-semibold text-stone-800">Add CSV File</span>
+                        <span class="text-[10px] text-stone-400">Drag & drop or click to upload</span>
+                    </div>
+
+                    <!-- Dataset Chips List Container -->
+                    <div id="dataset-list-container" class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div id="datasets-empty-state" class="col-span-full py-4 text-center text-xs text-stone-400 bg-stone-50 rounded-lg border border-stone-200">
+                            No dataset files loaded yet.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-4 pt-4 border-t border-stone-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-stone-700">Dataset Column Profiling & Integrity</h2>
+                        <p id="profiling-section-desc" class="text-xs text-stone-500">Column types, null counts, and value distribution profiles.</p>
+                    </div>
+                </div>
+
+                <div class="executive-card rounded-xl p-4 border border-stone-200 overflow-x-auto">
+                    <table class="w-full text-xs text-left text-stone-700">
+                        <thead class="text-[11px] uppercase bg-stone-100 text-stone-600 border-b border-stone-200">
+                            <tr>
+                                <th class="px-4 py-2.5">Column Name</th>
+                                <th class="px-4 py-2.5">Inferred Type</th>
+                                <th class="px-4 py-2.5">Unique Count</th>
+                                <th class="px-4 py-2.5">Null / Empty</th>
+                                <th class="px-4 py-2.5">Profile Summary (Min / Max / Samples)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="column-profile-table-body" class="divide-y divide-stone-200 font-mono text-[11px]">
+                            <!-- Dynamic profiling rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    
+    <!-- Custom Chart Builder Modal -->
+    <div id="custom-chart-modal" class="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl border border-stone-200 shadow-xl max-w-4xl w-full p-6 space-y-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-stone-200 pb-3">
+                <div>
+                    <h3 class="text-base font-bold text-stone-900">Custom Chart Builder</h3>
+                    <p class="text-xs text-stone-500">Construct custom metrics and dimension aggregations</p>
+                </div>
+                <button onclick="toggleModal('custom-chart-modal')" class="text-stone-400 hover:text-stone-700 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Custom Charts Control Section -->
+            <div id="custom-charts-tab-content" class="space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-stone-700 mb-1">Dimension (X-Axis)</label>
+                        <select id="builder-x-axis" class="w-full bg-stone-50 border border-stone-300 rounded-md px-3 py-1.5 text-xs text-stone-800 focus:outline-none focus:border-walnut-600">
+                            <!-- Options filled dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-stone-700 mb-1">Metric Target (Y-Axis)</label>
+                        <select id="builder-y-axis" class="w-full bg-stone-50 border border-stone-300 rounded-md px-3 py-1.5 text-xs text-stone-800 focus:outline-none focus:border-walnut-600">
+                            <!-- Options filled dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-stone-700 mb-1">Aggregation Method</label>
+                        <select id="builder-agg" class="w-full bg-stone-50 border border-stone-300 rounded-md px-3 py-1.5 text-xs text-stone-800 focus:outline-none focus:border-walnut-600">
+                            <option value="SUM">SUM (Total)</option>
+                            <option value="AVG">AVG (Mean)</option>
+                            <option value="COUNT">COUNT (Frequency)</option>
+                            <option value="MAX">MAX (Peak)</option>
+                            <option value="MIN">MIN (Minimum)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-stone-700 mb-1">Chart Type</label>
+                        <select id="builder-type" class="w-full bg-stone-50 border border-stone-300 rounded-md px-3 py-1.5 text-xs text-stone-800 focus:outline-none focus:border-walnut-600">
+                            <option value="bar">Bar Chart</option>
+                            <option value="line">Line Graph</option>
+                            <option value="doughnut">Doughnut Chart</option>
+                            <option value="pie">Pie Chart</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button onclick="renderCustomChart()" class="bg-walnut-600 hover:bg-walnut-700 text-white font-semibold text-xs px-4 py-2 rounded-md shadow-sm transition-all flex items-center space-x-1.5">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                        <span>Rebuild Visualization</span>
+                    </button>
+                </div>
+
+                <div class="h-80 relative w-full bg-stone-50 p-4 rounded-lg border border-stone-200">
+                    <canvas id="customBuilderCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Matrix Explorer Modal -->
+    <div id="explorer-modal" class="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl border border-stone-200 shadow-xl max-w-5xl w-full p-6 space-y-4 max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-stone-200 pb-3">
+                <div>
+                    <h3 class="text-base font-bold text-stone-900">Data Matrix Explorer</h3>
+                    <p class="text-xs text-stone-500">Inspect raw data records in loaded datasets</p>
+                </div>
+                <button onclick="toggleModal('explorer-modal')" class="text-stone-400 hover:text-stone-700 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Explorer Content -->
+            <div id="explorer-tab-content" class="space-y-4 flex-1 flex flex-col min-h-0">
+                <div class="flex items-center justify-between">
+                    <div class="relative w-72">
+                        <i data-lucide="search" class="w-3.5 h-3.5 text-stone-400 absolute left-3 top-2.5"></i>
+                        <input type="text" id="table-search-input" onkeyup="filterExplorerTable()" placeholder="Search records..." class="w-full bg-stone-50 border border-stone-300 rounded-md pl-8 pr-3 py-1.5 text-xs text-stone-800 focus:outline-none focus:border-walnut-600">
+                    </div>
+                    <span id="explorer-row-count" class="text-xs text-stone-500">Showing 0 rows</span>
+                </div>
+
+                <div class="overflow-x-auto flex-1 rounded-lg border border-stone-200 bg-white">
+                    <table class="w-full text-xs text-left text-stone-700">
+                        <thead id="explorer-table-head" class="text-[11px] uppercase bg-stone-100 sticky top-0 z-10 text-stone-600 border-b border-stone-200">
+                            <!-- Dynamic headers -->
+                        </thead>
+                        <tbody id="explorer-table-body" class="divide-y divide-stone-200 font-mono text-[11px]">
+                            <!-- Dynamic data rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            datasets: [], // Array of dataset objects: { id, name, rawRows, headers, columnProfiles, domain, active }
+            scope: 'merged', // 'merged' or 'selected'
+            selectedDatasetId: null,
+            activeTab: 'dashboard',
+            chartInstances: {}
+        };
+
+        // Modal toggle helper
+        function toggleModal(modalId) {
+            const el = document.getElementById(modalId);
+            if (!el) return;
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                if (modalId === 'custom-chart-modal') {
+                    renderCustomChartControls();
+                    renderCustomChart();
+                } else if (modalId === 'explorer-modal') {
+                    renderExplorerTable();
+                }
+            } else {
+                el.classList.add('hidden');
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Update main UI visibility and active indicators based on dataset state
+        function updateUIState() {
+            const activeDatasets = state.datasets.filter(d => d.active);
+            const hasData = activeDatasets.length > 0;
+
+            // Update header dataset counter
+            const activePill = document.getElementById('active-datasets-pill');
+            const activeCountText = document.getElementById('active-datasets-count');
+            if (activePill && activeCountText) {
+                if (state.datasets.length > 0) {
+                    activePill.classList.remove('hidden');
+                    activeCountText.textContent = `${activeDatasets.length} of ${state.datasets.length} Active`;
+                } else {
+                    activePill.classList.add('hidden');
+                }
+            }
+
+            // Toggle Global No Data Banner vs Dashboard Content
+            const globalBanner = document.getElementById('global-no-data-banner');
+            const dashboardContent = document.getElementById('dashboard-tab-content');
+
+            if (globalBanner && dashboardContent) {
+                if (hasData) {
+                    globalBanner.classList.add('hidden');
+                    dashboardContent.classList.remove('hidden');
+                } else {
+                    globalBanner.classList.remove('hidden');
+                    dashboardContent.classList.add('hidden');
+                }
+            }
+
+            // Render Dataset Management Chips
+            renderDatasetList();
+
+            // Render single page executive view
+            if (hasData) {
+                renderDashboard();
+            }
+            
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+
+        function renderDatasetList() {
+            const container = document.getElementById('dataset-list-container');
+            if (!container) return;
+
+            if (state.datasets.length === 0) {
+                container.innerHTML = `
+                    <div id="datasets-empty-state" class="col-span-full py-4 text-center text-xs text-stone-400 bg-stone-50 rounded-lg border border-stone-200">
+                        No dataset files loaded yet.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            state.datasets.forEach(ds => {
+                const isSelected = state.selectedDatasetId === ds.id;
+                const item = document.createElement('div');
+                item.className = `p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    isSelected 
+                        ? 'bg-stone-100 border-walnut-600 shadow-sm' 
+                        : 'bg-white hover:bg-stone-50 border-stone-200'
+                }`;
+
+                item.onclick = () => {
+                    selectDataset(ds.id);
+                };
+
+                item.innerHTML = `
+                    <div class="flex items-center space-x-2.5 min-w-0 flex-1">
+                        <input type="checkbox" ${ds.active ? 'checked' : ''} 
+                               onclick="event.stopPropagation(); toggleDatasetActive('${ds.id}')"
+                               class="rounded border-stone-300 text-walnut-600 focus:ring-walnut-600 bg-stone-50 h-3.5 w-3.5 cursor-pointer">
+                        <div class="truncate">
+                            <h4 class="text-xs font-semibold text-stone-800 truncate">${ds.name}</h4>
+                            <p class="text-[10px] text-stone-500">${ds.rows.length.toLocaleString()} rows • ${ds.domain}</p>
+                        </div>
+                    </div>
+                    <button onclick="event.stopPropagation(); removeDataset('${ds.id}')" title="Remove dataset" class="text-stone-400 hover:text-terracotta-700 p-1 transition-colors">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Workspace Management Functions
+        function selectDataset(id) {
+            state.selectedDatasetId = id;
+            updateUIState();
+        }
+
+        function toggleDatasetActive(id) {
+            const ds = state.datasets.find(d => d.id === id);
+            if (ds) {
+                ds.active = !ds.active;
+                updateUIState();
+            }
+        }
+
+        function removeDataset(id) {
+            state.datasets = state.datasets.filter(d => d.id !== id);
+            if (state.selectedDatasetId === id) {
+                state.selectedDatasetId = state.datasets.length > 0 ? state.datasets[0].id : null;
+            }
+            updateUIState();
+            showToast('Dataset removed', 'info');
+        }
+
+        function clearWorkspace() {
+            state.datasets = [];
+            state.selectedDatasetId = null;
+            updateUIState();
+            showToast('Workspace cleared', 'info');
+        }
+
+        // Initialize Application
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            updateUIState();
+        });
+
+        // Trigger file select dialog
+        function triggerFileInput() {
+            document.getElementById('csv-file-input').click();
+        }
+
+        // Drag & Drop handlers
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('drop-zone').classList.add('border-walnut-600', 'bg-stone-100');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('drop-zone').classList.remove('border-walnut-600', 'bg-stone-100');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('drop-zone').classList.remove('border-walnut-600', 'bg-stone-100');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFiles(files);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                processFiles(files);
+            }
+            e.target.value = '';
+        }
+
+        function processFiles(files) {
+            Array.from(files).forEach(file => {
+                if (!file.name.endsWith('.csv')) {
+                    showToast('Only .csv files are supported', 'error');
+                    return;
+                }
+
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    dynamicTyping: true,
+                    complete: function(results) {
+                        if (results.data && results.data.length > 0) {
+                            addDatasetToWorkspace(file.name, results.data, results.meta.fields || []);
+                            showToast(`Loaded "${file.name}" successfully (${results.data.length} rows)`, 'success');
+                        } else {
+                            showToast(`Failed to parse rows from "${file.name}"`, 'error');
+                        }
+                    },
+                    error: function(err) {
+                        showToast(`Error reading "${file.name}": ${err.message}`, 'error');
+                    }
+                });
+            });
+        }
+
+        function addDatasetToWorkspace(filename, rows, headers) {
+            const cleanHeaders = headers.map(h => String(h).trim());
+            const columnProfiles = profileColumns(rows, cleanHeaders);
+            const domain = classifyDomain(cleanHeaders);
+
+            const datasetObj = {
+                id: 'ds_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                name: filename,
+                rows: rows,
+                headers: cleanHeaders,
+                columnProfiles: columnProfiles,
+                domain: domain,
+                active: true
+            };
+
+            state.datasets.push(datasetObj);
+            state.selectedDatasetId = datasetObj.id;
+
+            updateUIState();
+        }
+
+        function profileColumns(rows, headers) {
+            const profiles = {};
+
+            headers.forEach(header => {
+                const values = rows.map(r => r[header]).filter(v => v !== null && v !== undefined && v !== '');
+                const uniqueCount = new Set(values).size;
+                const nullCount = rows.length - values.length;
+
+                let numericCount = 0;
+                let sum = 0;
+                let min = Infinity;
+                let max = -Infinity;
+
+                values.forEach(v => {
+                    const num = Number(v);
+                    if (!isNaN(num) && typeof v !== 'boolean') {
+                        numericCount++;
+                        sum += num;
+                        if (num < min) min = num;
+                        if (num > max) max = num;
+                    }
+                });
+
+                const isNumeric = values.length > 0 && (numericCount / values.length) > 0.8;
+
+                profiles[header] = {
+                    type: isNumeric ? 'Numeric' : 'Categorical',
+                    uniqueCount: uniqueCount,
+                    nullCount: nullCount,
+                    min: isNumeric && min !== Infinity ? min : null,
+                    max: isNumeric && max !== -Infinity ? max : null,
+                    avg: isNumeric && values.length > 0 ? (sum / numericCount) : null,
+                    samples: values.slice(0, 3)
+                };
+            });
+
+            return profiles;
+        }
+
+        function classifyDomain(headers) {
+            if (!Array.isArray(headers) || headers.length === 0) {
+                return 'Unrecognized Schema';
+            }
+
+            const normalize = (str) => String(str).toLowerCase().replace(/[\s_\-]/g, '');
+            const normalizedHeaders = new Set(headers.map(normalize));
+            const hasAll = (requiredFields) => requiredFields.every(field => normalizedHeaders.has(normalize(field)));
+
+            if (hasAll(['id', 'customerId', 'productType', 'status', 'quotePrice', 'acceptanceDate', 'deliveryStatus'])) {
+                return 'Orders';
+            }
+            if (hasAll(['date', 'type', 'amount', 'description'])) {
+                return 'Financial Ledger';
+            }
+            if (hasAll(['employeeId', 'role', 'skillLevel', 'status'])) {
+                return 'HR Roster';
+            }
+            if (hasAll(['employeeId', 'date', 'event'])) {
+                return 'HR Events';
+            }
+            if (hasAll(['orderId', 'designerId', 'durationDays'])) {
+                return 'Design Log';
+            }
+            if (hasAll(['material', 'type', 'quantity', 'newLevel'])) {
+                return 'Inventory Log';
+            }
+
+            return 'Unrecognized Schema';
+        }
+
+        function setScope(scopeType) {
+            state.scope = scopeType;
+            const btnMerged = document.getElementById('scope-btn-merged');
+            const btnSelected = document.getElementById('scope-btn-selected');
+
+            if (scopeType === 'merged') {
+                btnMerged.className = 'py-1 px-3 text-xs font-semibold rounded text-white bg-walnut-600 shadow-sm transition-all text-center';
+                btnSelected.className = 'py-1 px-3 text-xs font-semibold rounded text-stone-600 hover:text-stone-900 transition-all text-center';
+                const activeCount = state.datasets.filter(d => d.active).length;
+                if (activeCount > 1) {
+                    showToast('Combined scope uses verified cross-dataset metrics.', 'info');
+                }
+            } else {
+                btnSelected.className = 'py-1 px-3 text-xs font-semibold rounded text-white bg-walnut-600 shadow-sm transition-all text-center';
+                btnMerged.className = 'py-1 px-3 text-xs font-semibold rounded text-stone-600 hover:text-stone-900 transition-all text-center';
+            }
+
+            updateUIState();
+        }
+
+        function getScopedRows() {
+            const target = state.datasets.find(d => d.id === state.selectedDatasetId && d.active) 
+                        || state.datasets.find(d => d.active);
+            return target ? target.rows : [];
+        }
+
+        function getScopedHeaders() {
+            const target = state.datasets.find(d => d.id === state.selectedDatasetId && d.active) 
+                        || state.datasets.find(d => d.active);
+            return target ? target.headers : [];
+        }
+
+        function renderDashboard() {
+            const activeDatasets = state.datasets.filter(d => d.active);
+            if (activeDatasets.length === 0) return;
+
+            const selectedDataset = state.datasets.find(d => d.id === state.selectedDatasetId && d.active) || activeDatasets[0];
+            const factMap = buildFactMap();
+
+            const domainBadgeEl = document.getElementById('domain-badge');
+            const summaryDescEl = document.getElementById('workspace-summary-desc');
+            const metaTotalRowsEl = document.getElementById('meta-total-rows');
+            const metaNumColsEl = document.getElementById('meta-numeric-cols');
+            const metaNumLabelEl = document.getElementById('meta-numeric-label');
+            const metaCatColsEl = document.getElementById('meta-categorical-cols');
+            const metaCatLabelEl = document.getElementById('meta-categorical-label');
+            const profilingDescEl = document.getElementById('profiling-section-desc');
+
+            if (state.scope === 'merged') {
+                if (domainBadgeEl) domainBadgeEl.textContent = 'Cross-Domain Executive View';
+                if (summaryDescEl) {
+                    summaryDescEl.textContent = 'Combined analysis using verified cross-dataset metrics across loaded operational logs.';
+                }
+
+                const totalRows = activeDatasets.reduce((sum, ds) => sum + (ds.rows ? ds.rows.length : 0), 0);
+                const uniqueDomainsCount = new Set(activeDatasets.map(d => d.domain)).size;
+
+                if (metaTotalRowsEl) metaTotalRowsEl.textContent = totalRows.toLocaleString();
+                if (metaNumColsEl) metaNumColsEl.textContent = uniqueDomainsCount;
+                if (metaNumLabelEl) metaNumLabelEl.textContent = 'Active Domains';
+                if (metaCatColsEl) metaCatColsEl.textContent = activeDatasets.length;
+                if (metaCatLabelEl) metaCatLabelEl.textContent = 'Active Datasets';
+
+                if (profilingDescEl) {
+                    profilingDescEl.textContent = `Column types and profiles for selected dataset (${selectedDataset ? selectedDataset.name : 'None'}) — raw data inspection reflects the currently selected dataset.`;
+                }
+
+                renderCombinedExecutiveKPIs(factMap);
+                renderOperationalSignals(factMap, selectedDataset);
+                
+                const ordersDs = activeDatasets.find(d => d.domain === 'Orders');
+                renderAutoCharts(ordersDs ? ordersDs.rows : null);
+            } else {
+                if (!selectedDataset) return;
+
+                if (domainBadgeEl) domainBadgeEl.textContent = selectedDataset.domain;
+                if (summaryDescEl) {
+                    summaryDescEl.textContent = 'Calculated metrics across active operational datasets for Modern Furniture Co.';
+                }
+
+                if (metaTotalRowsEl) metaTotalRowsEl.textContent = selectedDataset.rows.length.toLocaleString();
+
+                const rows = selectedDataset.rows || [];
+                const headers = selectedDataset.headers || [];
+                let numericCols = [];
+                let categoricalCols = [];
+
+                headers.forEach(h => {
+                    const values = rows.map(r => r[h]).filter(v => v !== null && v !== undefined && v !== '');
+                    const isNumeric = values.length > 0 && values.filter(v => !isNaN(Number(v)) && typeof v !== 'boolean').length / values.length > 0.8;
+                    if (isNumeric) numericCols.push(h);
+                    else categoricalCols.push(h);
+                });
+
+                if (metaNumColsEl) metaNumColsEl.textContent = numericCols.length;
+                if (metaNumLabelEl) metaNumLabelEl.textContent = 'Metrics';
+                if (metaCatColsEl) metaCatColsEl.textContent = categoricalCols.length;
+                if (metaCatLabelEl) metaCatLabelEl.textContent = 'Dimensions';
+
+                if (profilingDescEl) {
+                    profilingDescEl.textContent = 'Column types, null counts, and value distribution profiles.';
+                }
+
+                renderSingleDomainKPIs(selectedDataset);
+                renderOperationalSignals(factMap, selectedDataset);
+                
+                if (selectedDataset.domain === 'Orders') {
+                    renderAutoCharts(selectedDataset.rows);
+                } else {
+                    renderAutoCharts(null);
+                }
+            }
+
+            renderColumnProfileTable(getScopedRows(), getScopedHeaders());
+        }
+
+        function renderCombinedExecutiveKPIs(factMap) {
+            const grid = document.getElementById('dynamic-kpi-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const ordersDs = factMap.datasets.find(d => d.domain === 'Orders');
+            const finDs = factMap.datasets.find(d => d.domain === 'Financial Ledger');
+            const hrDs = factMap.datasets.find(d => d.domain === 'HR Roster');
+            const designDs = factMap.datasets.find(d => d.domain === 'Design Log');
+
+            let selectedCards = [];
+
+            // Prioritized executive summary rule: Orders + Financial + HR available
+            if (ordersDs && finDs && hrDs) {
+                const om = ordersDs.metrics;
+                const fm = finDs.metrics;
+                const hm = hrDs.metrics;
+
+                selectedCards = [
+                    {
+                        title: 'Quote Conversion Rate',
+                        value: `${om.quoteConversionRate.toFixed(1)}%`,
+                        subtitle: `${om.acceptedOrders} accepted / ${om.totalInquiries} total inquiries`,
+                        color: 'text-walnut-700'
+                    },
+                    {
+                        title: 'On-Time Delivery Rate',
+                        value: om.deliveredOrders > 0 ? `${om.onTimeDeliveryRate.toFixed(1)}%` : 'N/A',
+                        subtitle: `${om.deliveredOrders - om.lateDeliveredCount} on time, ${om.lateDeliveredCount} late`,
+                        color: 'text-forest-700'
+                    },
+                    {
+                        title: 'Net Operating Profit',
+                        value: `$${fm.netOperatingProfit.toLocaleString(undefined, {maximumFractionDigits: 0})}`,
+                        subtitle: fm.netProfitMargin !== null ? `${fm.netProfitMargin.toFixed(1)}% profit margin` : 'Net ledger profit',
+                        color: 'text-walnut-700'
+                    },
+                    {
+                        title: 'Active Staff',
+                        value: hm.activeStaff.toLocaleString(),
+                        subtitle: `Out of ${hm.totalRoster} total roster`,
+                        color: 'text-forest-700'
+                    }
+                ];
+            } else {
+                // Round-robin selection across active factMap domains
+                const domainPools = [];
+
+                if (ordersDs) {
+                    const om = ordersDs.metrics;
+                    domainPools.push([
+                        {
+                            title: 'Quote Conversion Rate',
+                            value: `${om.quoteConversionRate.toFixed(1)}%`,
+                            subtitle: `${om.acceptedOrders} accepted / ${om.totalInquiries} total inquiries`,
+                            color: 'text-walnut-700'
+                        },
+                        {
+                            title: 'On-Time Delivery Rate',
+                            value: om.deliveredOrders > 0 ? `${om.onTimeDeliveryRate.toFixed(1)}%` : 'N/A',
+                            subtitle: `${om.deliveredOrders - om.lateDeliveredCount} on time, ${om.lateDeliveredCount} late`,
+                            color: 'text-forest-700'
+                        },
+                        {
+                            title: 'Active WIP Queue',
+                            value: om.activeWip.toLocaleString(),
+                            subtitle: `$${om.activePipelineValue.toLocaleString(undefined, {maximumFractionDigits: 0})} active pipeline`,
+                            color: 'text-amber-700'
+                        },
+                        {
+                            title: 'Lost Quoted Opportunity',
+                            value: `$${om.lostQuotedOpportunityValue.toLocaleString(undefined, {maximumFractionDigits: 0})}`,
+                            subtitle: `${om.lostInquiries} lost inquiries`,
+                            color: 'text-terracotta-700'
+                        }
+                    ]);
+                }
+
+                if (finDs) {
+                    const fm = finDs.metrics;
+                    domainPools.push([
+                        {
+                            title: 'Net Operating Profit',
+                            value: `$${fm.netOperatingProfit.toLocaleString(undefined, {maximumFractionDigits: 0})}`,
+                            subtitle: fm.netProfitMargin !== null ? `${fm.netProfitMargin.toFixed(1)}% profit margin` : 'Net ledger profit',
+                            color: 'text-walnut-700'
+                        },
+                        {
+                            title: 'Recognized Revenue',
+                            value: `$${fm.recognizedRevenue.toLocaleString(undefined, {maximumFractionDigits: 0})}`,
+                            subtitle: 'Total ledger revenue',
+                            color: 'text-forest-700'
+                        },
+                        {
+                            title: 'Net Profit Margin',
+                            value: fm.netProfitMargin !== null ? `${fm.netProfitMargin.toFixed(1)}%` : 'N/A',
+                            subtitle: `$${fm.netOperatingProfit.toLocaleString(undefined, {maximumFractionDigits: 0})} net profit`,
+                            color: 'text-forest-700'
+                        },
+                        {
+                            title: 'Recognized Cost',
+                            value: `$${fm.recognizedCost.toLocaleString(undefined, {maximumFractionDigits: 0})}`,
+                            subtitle: 'Total ledger cost',
+                            color: 'text-terracotta-700'
+                        }
+                    ]);
+                }
+
+                if (hrDs) {
+                    const hm = hrDs.metrics;
+                    domainPools.push([
+                        {
+                            title: 'Active Staff',
+                            value: hm.activeStaff.toLocaleString(),
+                            subtitle: `Out of ${hm.totalRoster} total roster`,
+                            color: 'text-forest-700'
+                        },
+                        {
+                            title: 'Roster Resignation Share',
+                            value: `${hm.rosterResignationShare.toFixed(1)}%`,
+                            subtitle: `${hm.resignedStaff} resigned staff`,
+                            color: 'text-amber-700'
+                        },
+                        {
+                            title: 'Resigned Staff',
+                            value: hm.resignedStaff.toLocaleString(),
+                            subtitle: `${hm.rosterResignationShare.toFixed(1)}% resignation share`,
+                            color: 'text-terracotta-700'
+                        }
+                    ]);
+                }
+
+                if (designDs) {
+                    const dm = designDs.metrics;
+                    domainPools.push([
+                        {
+                            title: 'Average Design Duration',
+                            value: dm.averageDesignDuration !== null ? `${dm.averageDesignDuration.toFixed(1)} days` : 'N/A',
+                            subtitle: 'Across recorded design tasks',
+                            color: 'text-walnut-700'
+                        },
+                        {
+                            title: 'Assignment Count',
+                            value: dm.assignmentCount.toLocaleString(),
+                            subtitle: 'Total design assignments',
+                            color: 'text-stone-700'
+                        }
+                    ]);
+                }
+
+                let round = 0;
+                while (selectedCards.length < 4 && domainPools.some(pool => pool.length > round)) {
+                    for (let p = 0; p < domainPools.length; p++) {
+                        if (domainPools[p][round]) {
+                            selectedCards.push(domainPools[p][round]);
+                            if (selectedCards.length === 4) break;
+                        }
+                    }
+                    round++;
+                }
+            }
+
+            if (selectedCards.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full p-6 bg-stone-50 rounded-lg text-center text-xs text-stone-500 border border-stone-200">
+                        No verified cross-domain KPI metrics available for loaded active datasets.
+                    </div>
+                `;
+                return;
+            }
+
+            selectedCards.forEach(kpi => {
+                const card = document.createElement('div');
+                card.className = 'executive-card rounded-xl p-5 border border-stone-200 flex flex-col justify-between';
+                card.innerHTML = `
+                    <div class="mb-2">
+                        <span class="text-xs font-semibold text-stone-500 uppercase tracking-wider block">${kpi.title}</span>
+                    </div>
+                    <div class="space-y-1 my-1">
+                        <div class="text-2xl font-bold text-stone-900 tracking-tight">${kpi.value}</div>
+                        <div class="text-[11px] text-stone-500 font-medium">${kpi.subtitle}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderSingleDomainKPIs(selectedDataset) {
+            const grid = document.getElementById('dynamic-kpi-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            if (!selectedDataset || selectedDataset.domain !== 'Orders') {
+                grid.innerHTML = `
+                    <div class="col-span-full p-6 bg-stone-50 rounded-lg text-center text-xs text-stone-500 border border-stone-200">
+                        Verified KPI definitions for this dataset pattern will be loaded automatically when available.
+                    </div>
+                `;
+                return;
+            }
+
+            const getVal = (r, key) => {
+                if (r[key] !== undefined) return r[key];
+                const found = Object.keys(r).find(k => k.trim().toLowerCase() === key.toLowerCase());
+                return found ? r[found] : undefined;
+            };
+
+            const rows = selectedDataset.rows;
+            const totalInquiries = rows.length;
+            const acceptedOrders = rows.filter(r => {
+                const val = getVal(r, 'acceptanceDate');
+                return val !== null && val !== undefined && String(val).trim() !== '';
+            });
+            const acceptedCount = acceptedOrders.length;
+            const conversionRate = totalInquiries > 0 ? (acceptedCount / totalInquiries) * 100 : 0;
+
+            const deliveredOrders = rows.filter(r => String(getVal(r, 'status') || '').trim().toUpperCase() === 'DELIVERED');
+            const deliveredCount = deliveredOrders.length;
+
+            const lostOrders = rows.filter(r => String(getVal(r, 'status') || '').trim().toUpperCase() === 'LOST');
+            const lostCount = lostOrders.length;
+
+            const activeWipStatuses = ['DESIGN', 'MILLING', 'JOINERY', 'FINISHING'];
+            const activeWipOrders = rows.filter(r => activeWipStatuses.includes(String(getVal(r, 'status') || '').trim().toUpperCase()));
+            const activeWipCount = activeWipOrders.length;
+
+            const onTimeDeliveredCount = deliveredOrders.filter(r => String(getVal(r, 'deliveryStatus') || '').trim().toUpperCase() === 'ON TIME').length;
+            const lateDeliveredCount = deliveredCount - onTimeDeliveredCount;
+            const onTimeRate = deliveredCount > 0 ? (onTimeDeliveredCount / deliveredCount) * 100 : 0;
+
+            const lostOpportunityValue = lostOrders.reduce((sum, r) => {
+                const price = Number(getVal(r, 'quotePrice'));
+                return sum + (!isNaN(price) ? price : 0);
+            }, 0);
+
+            const activePipelineValue = activeWipOrders.reduce((sum, r) => {
+                const price = Number(getVal(r, 'quotePrice'));
+                return sum + (!isNaN(price) ? price : 0);
+            }, 0);
+
+            const kpiCards = [
+                {
+                    title: 'Quote Conversion Rate',
+                    value: `${conversionRate.toFixed(1)}%`,
+                    subtitle: `${acceptedCount} accepted / ${totalInquiries} total inquiries`,
+                    color: 'text-walnut-700'
+                },
+                {
+                    title: 'On-Time Delivery Rate',
+                    value: deliveredCount > 0 ? `${onTimeRate.toFixed(1)}%` : 'N/A',
+                    subtitle: `${onTimeDeliveredCount} on time, ${lateDeliveredCount} late`,
+                    color: 'text-forest-700'
+                },
+                {
+                    title: 'Active WIP Queue',
+                    value: activeWipCount.toLocaleString(),
+                    subtitle: `$${activePipelineValue.toLocaleString(undefined, {maximumFractionDigits: 0})} active pipeline`,
+                    color: 'text-amber-700'
+                },
+                {
+                    title: 'Lost Quoted Opportunity',
+                    value: `$${lostOpportunityValue.toLocaleString(undefined, {maximumFractionDigits: 0})}`,
+                    subtitle: `${lostCount} lost inquiries`,
+                    color: 'text-terracotta-700'
+                }
+            ];
+
+            kpiCards.forEach(kpi => {
+                const card = document.createElement('div');
+                card.className = 'executive-card rounded-xl p-5 border border-stone-200 flex flex-col justify-between';
+                card.innerHTML = `
+                    <div class="mb-2">
+                        <span class="text-xs font-semibold text-stone-500 uppercase tracking-wider block">${kpi.title}</span>
+                    </div>
+                    <div class="space-y-1 my-1">
+                        <div class="text-2xl font-bold text-stone-900 tracking-tight">${kpi.value}</div>
+                        <div class="text-[11px] text-stone-500 font-medium">${kpi.subtitle}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderOperationalSignals(factMap, selectedDataset) {
+            const sig1 = document.getElementById('signal-1-evidence');
+            const sig2 = document.getElementById('signal-2-evidence');
+            const sig3 = document.getElementById('signal-3-evidence');
+            const sig4 = document.getElementById('signal-4-evidence');
+
+            const ordersDs = factMap ? factMap.datasets.find(d => d.domain === 'Orders') : null;
+            const hasOrders = state.scope === 'merged' ? Boolean(ordersDs) : Boolean(selectedDataset && selectedDataset.domain === 'Orders');
+
+            if (!hasOrders || !ordersDs || !ordersDs.metrics) {
+                if (sig1) sig1.textContent = 'Operational signals require active Orders data';
+                if (sig2) sig2.textContent = 'Operational signals require active Orders data';
+                if (sig3) sig3.textContent = 'Operational signals require active Orders data';
+                if (sig4) sig4.textContent = 'Operational signals require active Orders data';
+                return;
+            }
+
+            const m = ordersDs.metrics;
+            if (sig1) sig1.textContent = `${m.quoteConversionRate.toFixed(1)}% Quote Conversion (${m.acceptedOrders}/${m.totalInquiries})`;
+            if (sig2) sig2.textContent = `${m.onTimeDeliveryRate.toFixed(1)}% On-Time (${m.deliveredOrders - m.lateDeliveredCount} on time, ${m.lateDeliveredCount} late)`;
+            if (sig3) sig3.textContent = `${m.activeWip} Active WIP Orders ($${m.activePipelineValue.toLocaleString(undefined, {maximumFractionDigits: 0})})`;
+            if (sig4) sig4.textContent = `$${m.lostQuotedOpportunityValue.toLocaleString(undefined, {maximumFractionDigits: 0})} Lost Quoted Value (${m.lostInquiries} lost)`;
+        }
+
+        function renderAutoCharts(ordersRows) {
+            if (state.chartInstances.chart1) {
+                state.chartInstances.chart1.destroy();
+                state.chartInstances.chart1 = null;
+            }
+            if (state.chartInstances.chart2) {
+                state.chartInstances.chart2.destroy();
+                state.chartInstances.chart2 = null;
+            }
+
+            const title1El = document.getElementById('chart-1-title');
+            const sub1El = document.getElementById('chart-1-subtitle');
+            const title2El = document.getElementById('chart-2-title');
+            const sub2El = document.getElementById('chart-2-subtitle');
+
+            if (!ordersRows || ordersRows.length === 0) {
+                if (title1El) title1El.textContent = 'Order Lifecycle Distribution';
+                if (sub1El) sub1El.textContent = 'Verified operational charts are available when Orders data is active.';
+                if (title2El) title2El.textContent = 'Performance by Product Line';
+                if (sub2El) sub2El.textContent = 'Verified operational charts are available when Orders data is active.';
+                return;
+            }
+
+            const getVal = (r, key) => {
+                if (!r) return undefined;
+                if (r[key] !== undefined) return r[key];
+                const found = Object.keys(r).find(k => k.trim().toLowerCase() === key.toLowerCase());
+                return found ? r[found] : undefined;
+            };
+
+            let acceptedCount = 0;
+            let deliveredCount = 0;
+            let lostCount = 0;
+            let activeWipCount = 0;
+
+            const activeWipStatuses = ['DESIGN', 'MILLING', 'JOINERY', 'FINISHING'];
+            const productMap = {};
+
+            ordersRows.forEach(r => {
+                const accDate = getVal(r, 'acceptanceDate');
+                if (accDate !== null && accDate !== undefined && String(accDate).trim() !== '') {
+                    acceptedCount++;
+                }
+
+                const status = String(getVal(r, 'status') || '').trim().toUpperCase();
+                if (status === 'DELIVERED') {
+                    deliveredCount++;
+                } else if (status === 'LOST') {
+                    lostCount++;
+                }
+
+                if (activeWipStatuses.includes(status)) {
+                    activeWipCount++;
+                }
+
+                const rawProductType = getVal(r, 'productType');
+                const productType = (rawProductType !== null && rawProductType !== undefined && String(rawProductType).trim() !== '') 
+                    ? String(rawProductType).trim() 
+                    : 'Unspecified';
+
+                if (!productMap[productType]) {
+                    productMap[productType] = { delivered: 0, lost: 0 };
+                }
+
+                if (status === 'DELIVERED') {
+                    productMap[productType].delivered++;
+                } else if (status === 'LOST') {
+                    productMap[productType].lost++;
+                }
+            });
+
+            if (title1El) title1El.textContent = 'Order Lifecycle Distribution';
+            if (sub1El) sub1El.textContent = 'Accepted, delivered, lost and active production orders';
+
+            const canvas1 = document.getElementById('dynamicChart1');
+            if (canvas1) {
+                const ctx1 = canvas1.getContext('2d');
+                state.chartInstances.chart1 = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Accepted Orders', 'Delivered Orders', 'Lost Inquiries', 'Active WIP'],
+                        datasets: [{
+                            label: 'Orders Count',
+                            data: [acceptedCount, deliveredCount, lostCount, activeWipCount],
+                            backgroundColor: [
+                                '#6b4c35',
+                                '#2c4a38',
+                                '#b8533c',
+                                '#d97706'
+                            ],
+                            borderWidth: 0,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { grid: { color: '#f0ece1' }, ticks: { color: '#57534e', font: { size: 10 } } },
+                            y: { grid: { color: '#f0ece1' }, ticks: { color: '#57534e', font: { size: 10 }, precision: 0 } }
+                        }
+                    }
+                });
+            }
+
+            if (title2El) title2El.textContent = 'Delivered vs Lost by Product Line';
+            if (sub2El) sub2El.textContent = 'Order outcomes across furniture categories';
+
+            const canvas2 = document.getElementById('dynamicChart2');
+            if (canvas2) {
+                const categories = Object.keys(productMap);
+                const deliveredData = categories.map(cat => productMap[cat].delivered);
+                const lostData = categories.map(cat => productMap[cat].lost);
+
+                const ctx2 = canvas2.getContext('2d');
+                state.chartInstances.chart2 = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: categories,
+                        datasets: [
+                            {
+                                label: 'Delivered',
+                                data: deliveredData,
+                                backgroundColor: '#2c4a38',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Lost',
+                                data: lostData,
+                                backgroundColor: '#b8533c',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: { color: '#57534e', font: { size: 10 }, boxWidth: 10 }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { color: '#f0ece1' }, ticks: { color: '#57534e', font: { size: 10 } } },
+                            y: { grid: { color: '#f0ece1' }, ticks: { color: '#57534e', font: { size: 10 }, precision: 0 } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderColumnProfileTable(rows, headers) {
+            const tbody = document.getElementById('column-profile-table-body');
+            tbody.innerHTML = '';
+
+            const activeDataset = state.datasets.find(d => d.id === state.selectedDatasetId);
+            const profiles = activeDataset ? activeDataset.columnProfiles : profileColumns(rows, headers);
+
+            headers.forEach(h => {
+                const prof = profiles[h] || { type: 'Unknown', uniqueCount: 0, nullCount: 0, samples: [] };
+                
+                let profileSummaryText = '';
+                if (prof.type === 'Numeric') {
+                    profileSummaryText = `Min: ${prof.min !== null ? prof.min : 'N/A'} | Max: ${prof.max !== null ? prof.max : 'N/A'} | Avg: ${prof.avg !== null ? prof.avg.toFixed(2) : 'N/A'}`;
+                } else {
+                    profileSummaryText = `Sample: [${prof.samples.join(', ')}]`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-stone-50 transition-colors';
+                tr.innerHTML = `
+                    <td class="px-4 py-2.5 font-semibold text-stone-900">${h}</td>
+                    <td class="px-4 py-2.5">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-sans ${prof.type === 'Numeric' ? 'bg-stone-200 text-stone-800' : 'bg-stone-100 text-stone-600'}">
+                            ${prof.type}
+                        </span>
+                    </td>
+                    <td class="px-4 py-2.5 text-stone-700">${prof.uniqueCount}</td>
+                    <td class="px-4 py-2.5 ${prof.nullCount > 0 ? 'text-terracotta-700 font-bold' : 'text-stone-500'}">${prof.nullCount}</td>
+                    <td class="px-4 py-2.5 text-stone-500 truncate max-w-xs">${profileSummaryText}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderCustomChartControls() {
+            const headers = getScopedHeaders();
+            const xAxisSelect = document.getElementById('builder-x-axis');
+            const yAxisSelect = document.getElementById('builder-y-axis');
+
+            if (!xAxisSelect || !yAxisSelect) return;
+
+            xAxisSelect.innerHTML = '';
+            yAxisSelect.innerHTML = '';
+
+            headers.forEach(h => {
+                const optX = document.createElement('option');
+                optX.value = h;
+                optX.textContent = h;
+                xAxisSelect.appendChild(optX);
+
+                const optY = document.createElement('option');
+                optY.value = h;
+                optY.textContent = h;
+                yAxisSelect.appendChild(optY);
+            });
+
+            if (headers.length > 1) {
+                yAxisSelect.selectedIndex = 1;
+            }
+        }
+
+        function renderCustomChart() {
+            const rows = getScopedRows();
+            if (rows.length === 0) return;
+
+            const xAxisSelect = document.getElementById('builder-x-axis');
+            const yAxisSelect = document.getElementById('builder-y-axis');
+            if (!xAxisSelect || !yAxisSelect || !xAxisSelect.value) return;
+
+            const xAxis = xAxisSelect.value;
+            const yAxis = yAxisSelect.value;
+            const agg = document.getElementById('builder-agg').value;
+            const chartType = document.getElementById('builder-type').value;
+
+            const groupMap = {};
+
+            rows.forEach(r => {
+                const key = r[xAxis] !== undefined && r[xAxis] !== null ? String(r[xAxis]) : 'Unspecified';
+                const val = Number(r[yAxis]) || 0;
+
+                if (!groupMap[key]) {
+                    groupMap[key] = [];
+                }
+                groupMap[key].push(val);
+            });
+
+            const labels = Object.keys(groupMap).slice(0, 15);
+            const aggregatedValues = labels.map(key => {
+                const arr = groupMap[key];
+                if (agg === 'SUM') return arr.reduce((a,b)=>a+b, 0);
+                if (agg === 'AVG') return arr.reduce((a,b)=>a+b, 0) / arr.length;
+                if (agg === 'COUNT') return arr.length;
+                if (agg === 'MAX') return Math.max(...arr);
+                if (agg === 'MIN') return Math.min(...arr);
+                return 0;
+            });
+
+            if (state.chartInstances.customBuilder) {
+                state.chartInstances.customBuilder.destroy();
+            }
+
+            const canvas = document.getElementById('customBuilderCanvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            state.chartInstances.customBuilder = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `${agg} of ${yAxis}`,
+                        data: aggregatedValues,
+                        backgroundColor: chartType === 'line' ? 'rgba(107, 76, 53, 0.2)' : [
+                            '#6b4c35', '#2c4a38', '#b8533c', '#d97706', '#44403c', '#78716c'
+                        ],
+                        borderColor: '#6b4c35',
+                        borderWidth: 1.5,
+                        fill: chartType === 'line'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#57534e' } }
+                    },
+                    scales: chartType !== 'pie' && chartType !== 'doughnut' ? {
+                        x: { ticks: { color: '#57534e' }, grid: { color: '#f0ece1' } },
+                        y: { ticks: { color: '#57534e' }, grid: { color: '#f0ece1' } }
+                    } : {}
+                }
+            });
+        }
+
+        function setPromptAndRun(promptText) {
+            document.getElementById('ai-query-input').value = promptText;
+            runDecisionAssistant();
+        }
+
+        function buildFactMap() {
+            const activeDatasets = state.datasets.filter(d => d.active);
+            const factMap = {
+                activeDatasetCount: activeDatasets.length,
+                datasets: []
+            };
+
+            const getVal = (r, key) => {
+                if (!r) return undefined;
+                if (r[key] !== undefined) return r[key];
+                const found = Object.keys(r).find(k => k.trim().toLowerCase() === key.toLowerCase());
+                return found ? r[found] : undefined;
+            };
+
+            activeDatasets.forEach(ds => {
+                const rows = ds.rows || [];
+                const domain = ds.domain;
+                const dsFact = {
+                    id: ds.id,
+                    name: ds.name,
+                    domain: domain,
+                    rowCount: rows.length,
+                    metrics: {}
+                };
+
+                if (domain === 'Orders') {
+                    let totalInquiries = rows.length;
+                    let acceptedOrders = 0;
+                    let deliveredOrders = 0;
+                    let lostInquiries = 0;
+                    let activeWip = 0;
+                    let lateDeliveredCount = 0;
+                    let lateDaysSum = 0;
+                    let lateDaysCount = 0;
+                    let totalQuotedValue = 0;
+                    let deliveredOrderValue = 0;
+                    let lostQuotedOpportunityValue = 0;
+                    let activePipelineValue = 0;
+
+                    const wipByStage = {};
+                    const activeWipStatuses = ['DESIGN', 'MILLING', 'JOINERY', 'FINISHING'];
+                    const productPerformance = {};
+
+                    rows.forEach(r => {
+                        const accDate = getVal(r, 'acceptanceDate');
+                        const isAccepted = accDate !== null && accDate !== undefined && String(accDate).trim() !== '';
+                        if (isAccepted) acceptedOrders++;
+
+                        const status = String(getVal(r, 'status') || '').trim().toUpperCase();
+                        const deliveryStatus = String(getVal(r, 'deliveryStatus') || '').trim().toUpperCase();
+                        const quotePrice = Number(getVal(r, 'quotePrice')) || 0;
+
+                        totalQuotedValue += quotePrice;
+
+                        if (status === 'DELIVERED') {
+                            deliveredOrders++;
+                            deliveredOrderValue += quotePrice;
+                            if (deliveryStatus === 'LATE') {
+                                lateDeliveredCount++;
+                            }
+                            const lateDaysVal = Number(getVal(r, 'lateDays') || getVal(r, 'delayDays') || getVal(r, 'daysLate'));
+                            if (!isNaN(lateDaysVal) && lateDaysVal > 0) {
+                                lateDaysSum += lateDaysVal;
+                                lateDaysCount++;
+                            }
+                        } else if (status === 'LOST') {
+                            lostInquiries++;
+                            lostQuotedOpportunityValue += quotePrice;
+                        }
+
+                        if (activeWipStatuses.includes(status)) {
+                            activeWip++;
+                            activePipelineValue += quotePrice;
+                            wipByStage[status] = (wipByStage[status] || 0) + 1;
+                        }
+
+                        const productType = String(getVal(r, 'productType') || 'Unspecified').trim();
+                        if (!productPerformance[productType]) {
+                            productPerformance[productType] = {
+                                deliveredCount: 0,
+                                lostCount: 0,
+                                lostQuotedOpportunityValue: 0
+                            };
+                        }
+                        if (status === 'DELIVERED') {
+                            productPerformance[productType].deliveredCount++;
+                        } else if (status === 'LOST') {
+                            productPerformance[productType].lostCount++;
+                            productPerformance[productType].lostQuotedOpportunityValue += quotePrice;
+                        }
+                    });
+
+                    dsFact.metrics = {
+                        totalInquiries,
+                        acceptedOrders,
+                        quoteConversionRate: totalInquiries > 0 ? (acceptedOrders / totalInquiries) * 100 : 0,
+                        deliveredOrders,
+                        lostInquiries,
+                        activeWip,
+                        onTimeDeliveryRate: deliveredOrders > 0 ? ((deliveredOrders - lateDeliveredCount) / deliveredOrders) * 100 : 0,
+                        lateDeliveredCount,
+                        averageLateDays: lateDaysCount > 0 ? lateDaysSum / lateDaysCount : null,
+                        totalQuotedValue,
+                        deliveredOrderValue,
+                        lostQuotedOpportunityValue,
+                        activePipelineValue,
+                        wipByStage,
+                        productPerformance
+                    };
+                } else if (domain === 'Financial Ledger') {
+                    let recognizedRevenue = 0;
+                    let recognizedCost = 0;
+
+                    rows.forEach(r => {
+                        const type = String(getVal(r, 'type') || '').trim().toUpperCase();
+                        const amt = Number(getVal(r, 'amount')) || 0;
+                        if (type === 'REVENUE') recognizedRevenue += amt;
+                        else if (type === 'COST') recognizedCost += amt;
+                    });
+
+                    const netOperatingProfit = recognizedRevenue - recognizedCost;
+                    const netProfitMargin = recognizedRevenue > 0 ? (netOperatingProfit / recognizedRevenue) * 100 : null;
+
+                    dsFact.metrics = {
+                        recognizedRevenue,
+                        recognizedCost,
+                        netOperatingProfit,
+                        netProfitMargin
+                    };
+                } else if (domain === 'HR Roster') {
+                    let totalRoster = rows.length;
+                    let activeStaff = 0;
+                    let resignedStaff = 0;
+                    const activeByRole = {};
+                    const resignedByRole = {};
+
+                    rows.forEach(r => {
+                        const status = String(getVal(r, 'status') || '').trim().toUpperCase();
+                        const role = String(getVal(r, 'role') || 'Unspecified').trim();
+
+                        if (status === 'ACTIVE') {
+                            activeStaff++;
+                            activeByRole[role] = (activeByRole[role] || 0) + 1;
+                        } else if (status === 'RESIGNED') {
+                            resignedStaff++;
+                            resignedByRole[role] = (resignedByRole[role] || 0) + 1;
+                        }
+                    });
+
+                    dsFact.metrics = {
+                        totalRoster,
+                        activeStaff,
+                        resignedStaff,
+                        rosterResignationShare: totalRoster > 0 ? (resignedStaff / totalRoster) * 100 : 0,
+                        activeByRole,
+                        resignedByRole
+                    };
+                } else if (domain === 'Design Log') {
+                    let durationSum = 0;
+                    let durationCount = 0;
+                    let assignmentCount = rows.length;
+                    const assignmentsByDesigner = {};
+
+                    rows.forEach(r => {
+                        const dur = Number(getVal(r, 'durationDays'));
+                        if (!isNaN(dur) && dur >= 0) {
+                            durationSum += dur;
+                            durationCount++;
+                        }
+                        const designer = String(getVal(r, 'designerId') || 'Unassigned').trim();
+                        assignmentsByDesigner[designer] = (assignmentsByDesigner[designer] || 0) + 1;
+                    });
+
+                    dsFact.metrics = {
+                        averageDesignDuration: durationCount > 0 ? durationSum / durationCount : null,
+                        assignmentCount,
+                        assignmentsByDesigner
+                    };
+                } else {
+                    dsFact.metrics = {
+                        loaded: true,
+                        rowCount: rows.length
+                    };
+                }
+
+                factMap.datasets.push(dsFact);
+            });
+
+            return factMap;
+        }
+
+        function evaluateDeterministicRules(query, factMap) {
+            const q = query.toLowerCase();
+
+            const fmtCurr = (num) => {
+                if (num === null || num === undefined || isNaN(num)) return 'N/A';
+                return '$' + Math.round(num).toLocaleString();
+            };
+            const fmtPct = (num) => {
+                if (num === null || num === undefined || isNaN(num)) return 'N/A';
+                return num.toFixed(1) + '%';
+            };
+
+            const ordersDs = factMap.datasets.find(d => d.domain === 'Orders');
+            const finDs = factMap.datasets.find(d => d.domain === 'Financial Ledger');
+            const hrDs = factMap.datasets.find(d => d.domain === 'HR Roster');
+
+            // Intent 6: What should management investigate next? / Priorities
+            if (q.includes('investigate next') || q.includes('what should management investigate') || q.includes('biggest issue') || q.includes('biggest gap') || q.includes('priority')) {
+                const decisions = [];
+
+                if (ordersDs && ordersDs.metrics) {
+                    const om = ordersDs.metrics;
+                    decisions.push({
+                        gap: "Operational focus area 1: Delivery reliability tracking across order fulfillment.",
+                        evidence: `On-time delivery rate is ${fmtPct(om.onTimeDeliveryRate)} (${om.deliveredOrders - om.lateDeliveredCount} on time, ${om.lateDeliveredCount} late) with ${om.activeWip} active WIP orders.`,
+                        impact: "Delivery delays affect customer fulfillment timelines.",
+                        action: "Implement stage-level timestamp tracking for WIP orders across manufacturing phases.",
+                        decision: "Evaluate delivery performance as a parallel operational focus area, not an isolated priority rank."
+                    });
+                }
+
+                if (finDs && finDs.metrics) {
+                    const fm = finDs.metrics;
+                    decisions.push({
+                        gap: "Operational focus area 2: Financial profit margin and revenue vs cost performance.",
+                        evidence: `Recognized revenue is ${fmtCurr(fm.recognizedRevenue)}, recognized cost is ${fmtCurr(fm.recognizedCost)}, resulting in net operating profit of ${fmtCurr(fm.netOperatingProfit)}${fm.netProfitMargin !== null ? ` (${fmtPct(fm.netProfitMargin)} profit margin)` : ''}.`,
+                        impact: "Ledger cost ratios directly determine operating profit margins.",
+                        action: "Conduct regular financial cost category reviews against recognized revenue streams.",
+                        decision: "Evaluate financial profitability as a parallel operational focus area, not an isolated priority rank."
+                    });
+                }
+
+                if (hrDs && hrDs.metrics) {
+                    const hm = hrDs.metrics;
+                    decisions.push({
+                        gap: "Operational focus area 3: Workforce continuity and roster staffing retention.",
+                        evidence: `Active staff headcount is ${hm.activeStaff} of ${hm.totalRoster} roster positions, with a roster resignation share of ${fmtPct(hm.rosterResignationShare)} (${hm.resignedStaff} resigned).`,
+                        impact: "Workforce availability supports ongoing operational activities.",
+                        action: "Assess role-specific staffing levels and active roster headcount replacement.",
+                        decision: "Evaluate workforce continuity as a parallel operational focus area, not an isolated priority rank."
+                    });
+                }
+
+                if (decisions.length === 0) {
+                    decisions.push({
+                        gap: "No domain-specific facts are currently loaded to determine operational investigation areas.",
+                        evidence: `FactMap contains ${factMap.activeDatasetCount} active dataset(s) without recognized domain schemas.`,
+                        impact: "Operational priorities cannot be identified without structured domain datasets.",
+                        action: "Upload Orders, Financial Ledger, or HR Roster datasets to generate investigation insights.",
+                        decision: "Do not declare operational investigation priorities without loaded domain data."
+                    });
+                }
+
+                return decisions;
+            }
+
+            // Intent 1: Delivery / Lateness
+            if (q.includes('late') || q.includes('delivery') || q.includes('deliveries') || q.includes('on time') || q.includes('delay')) {
+                if (!ordersDs || !ordersDs.metrics) {
+                    return [{
+                        gap: "Delivery performance facts are not available in the active dataset scope.",
+                        evidence: "No active Orders dataset with delivery metrics was found in factMap.",
+                        impact: "Delivery timelines cannot be evaluated without order delivery records.",
+                        action: "Upload an Orders dataset containing delivery outcomes and status fields.",
+                        decision: "Do not make delivery operational changes until delivery evidence is loaded."
+                    }];
+                }
+
+                const om = ordersDs.metrics;
+                const lateDaysStr = om.averageLateDays !== null ? `, with an average late duration of ${om.averageLateDays.toFixed(1)} days among late orders` : '';
+
+                return [{
+                    gap: "Late delivery performance is present in completed orders.",
+                    evidence: `On-time delivery rate is ${fmtPct(om.onTimeDeliveryRate)} (${om.deliveredOrders - om.lateDeliveredCount} on time, ${om.lateDeliveredCount} late of ${om.deliveredOrders} delivered orders)${lateDaysStr}. Active WIP queue stands at ${om.activeWip} orders.`,
+                    impact: "Delivery reliability may affect customer experience and operational predictability.",
+                    action: `Investigate stage-level timing data across production stages and monitor current active WIP of ${om.activeWip} orders.`,
+                    decision: "Do not change operational capacity assumptions until stage-level timing evidence is available."
+                }];
+            }
+
+            // Intent 2: Order intake / accepting more orders
+            if (q.includes('accept more orders') || q.includes('more orders') || q.includes('order intake') || q.includes('new orders') || (q.includes('capacity') && !q.includes('workforce'))) {
+                let evidenceParts = [];
+
+                if (ordersDs && ordersDs.metrics) {
+                    const om = ordersDs.metrics;
+                    evidenceParts.push(`Active WIP is ${om.activeWip} orders ($${fmtCurr(om.activePipelineValue)} active pipeline). On-time delivery rate is ${fmtPct(om.onTimeDeliveryRate)}.`);
+                }
+                if (hrDs && hrDs.metrics) {
+                    const hm = hrDs.metrics;
+                    evidenceParts.push(`Active staff count is ${hm.activeStaff} out of ${hm.totalRoster} total roster (${hm.resignedStaff} resigned staff).`);
+                }
+
+                const evidenceText = evidenceParts.length > 0 
+                    ? evidenceParts.join(' ') 
+                    : "No active Orders or HR datasets are available in factMap to review intake factors.";
+
+                return [{
+                    gap: "Production throughput and workshop capacity are not explicitly measured in the current data.",
+                    evidence: evidenceText,
+                    impact: "Accepting additional order volume without verified capacity measurements risks further extending fulfillment lead times.",
+                    action: "Establish explicit capacity measurement and stage-level cycle time tracking across production processes.",
+                    decision: "Order intake cannot be safely increased or reduced based on the available facts alone; explicit capacity measurement is required."
+                }];
+            }
+
+            // Intent 3: Profitability
+            if (q.includes('profit') || q.includes('profitability') || q.includes('margin') || q.includes('revenue') || q.includes('cost')) {
+                if (!finDs || !finDs.metrics) {
+                    return [{
+                        gap: "Financial performance facts are not available in the active dataset scope.",
+                        evidence: "No active Financial Ledger dataset was found in factMap.",
+                        impact: "Profitability and cost structure cannot be evaluated without financial ledger facts.",
+                        action: "Upload a Financial Ledger dataset containing revenue and cost transaction records.",
+                        decision: "Do not draw profitability conclusions without loaded financial ledger evidence."
+                    }];
+                }
+
+                const fm = finDs.metrics;
+                const marginStr = fm.netProfitMargin !== null ? ` (net profit margin: ${fmtPct(fm.netProfitMargin)})` : '';
+
+                return [{
+                    gap: `Operating profitability reflects recognized ledger revenue of ${fmtCurr(fm.recognizedRevenue)} against recognized ledger costs of ${fmtCurr(fm.recognizedCost)}.`,
+                    evidence: `Recognized revenue is ${fmtCurr(fm.recognizedRevenue)}, recognized cost is ${fmtCurr(fm.recognizedCost)}, yielding a net operating profit of ${fmtCurr(fm.netOperatingProfit)}${marginStr}.`,
+                    impact: "Net profitability is directly determined by the balance of recognized revenue and cost recorded in the financial ledger.",
+                    action: "Review cost structure line items and recognized revenue streams within financial ledger records.",
+                    decision: "Base profitability evaluation strictly on recognized ledger financial metrics; do not attribute profit trends to non-financial operational factors without direct evidence."
+                }];
+            }
+
+            // Intent 4: Lost quoted opportunity / Product categories
+            if (q.includes('lost opportunity') || q.includes('lost quoted') || q.includes('product category') || q.includes('product categories') || q.includes('product line') || q.includes('lost value')) {
+                if (!ordersDs || !ordersDs.metrics) {
+                    return [{
+                        gap: "Order quote outcome facts are not available in the active dataset scope.",
+                        evidence: "No active Orders dataset was found in factMap.",
+                        impact: "Lost quoted opportunity value cannot be analyzed without quote records.",
+                        action: "Upload an Orders dataset with quote prices and order status records.",
+                        decision: "Do not evaluate quote opportunity loss without loaded order quote evidence."
+                    }];
+                }
+
+                const om = ordersDs.metrics;
+                const prodPerf = om.productPerformance || {};
+                const sortedProds = Object.entries(prodPerf)
+                    .map(([cat, p]) => ({ category: cat, ...p }))
+                    .sort((a, b) => b.lostQuotedOpportunityValue - a.lostQuotedOpportunityValue);
+
+                if (sortedProds.length === 0) {
+                    return [{
+                        gap: "No category-level product quote data is recorded.",
+                        evidence: `Total lost quoted opportunity value is ${fmtCurr(om.lostQuotedOpportunityValue)} across ${om.lostInquiries} lost inquiries.`,
+                        impact: "Product category breakdown is unavailable.",
+                        action: "Ensure productType entries are specified in the Orders dataset.",
+                        decision: "Evaluate overall lost quoted opportunity value at the total order aggregate level."
+                    }];
+                }
+
+                const topCat = sortedProds[0];
+                const secondCatStr = sortedProds.length > 1 
+                    ? `. Secondary categories include '${sortedProds[1].category}' (${fmtCurr(sortedProds[1].lostQuotedOpportunityValue)})`
+                    : '';
+
+                return [{
+                    gap: "Unaccepted customer quotes represent lost quoted opportunity value across product categories.",
+                    evidence: `Total lost quoted opportunity value is ${fmtCurr(om.lostQuotedOpportunityValue)} across ${om.lostInquiries} lost inquiries. The highest lost quoted opportunity is in category '${topCat.category}' with ${fmtCurr(topCat.lostQuotedOpportunityValue)} lost (${topCat.lostCount} lost inquiries)${secondCatStr}.`,
+                    impact: "Unconverted quote volume reduces overall potential order pipeline intake.",
+                    action: `Review quoting criteria, pricing parameters, and inquiry response timing for '${topCat.category}'.`,
+                    decision: `Focus inquiry conversion analysis on '${topCat.category}' lost quoted opportunity value.`
+                }];
+            }
+
+            // Intent 5: Workforce
+            if (q.includes('workforce') || q.includes('staff') || q.includes('staffing') || q.includes('resignation') || q.includes('resignations') || q.includes('employee') || q.includes('employees')) {
+                if (!hrDs || !hrDs.metrics) {
+                    return [{
+                        gap: "HR roster facts are not available in the active dataset scope.",
+                        evidence: "No active HR Roster dataset was found in factMap.",
+                        impact: "Workforce headcount and resignation share cannot be evaluated without roster data.",
+                        action: "Upload an HR Roster dataset containing employee status and role allocations.",
+                        decision: "Do not evaluate workforce continuity without loaded HR roster facts."
+                    }];
+                }
+
+                const hm = hrDs.metrics;
+
+                return [{
+                    gap: "Staffing roster reflects active personnel levels alongside recorded resignation entries.",
+                    evidence: `Active staff count is ${hm.activeStaff} out of ${hm.totalRoster} total roster positions. Recorded resigned staff count is ${hm.resignedStaff}, representing a roster resignation share of ${fmtPct(hm.rosterResignationShare)}.`,
+                    impact: "Roster resignations affect overall available workforce headcount across active role allocations.",
+                    action: "Evaluate staffing requirements by operational role and monitor recruitment against active roster needs.",
+                    decision: "Address workforce continuity through targeted staffing reviews without attributing resignation share to standard employee turnover or operational delivery delays."
+                }];
+            }
+
+            // Unknown / fallback intent
+            return [{
+                gap: "The current prototype does not have a verified rule for this management question.",
+                evidence: `The available factMap remains loaded and verified with ${factMap.activeDatasetCount} active dataset(s).`,
+                impact: "Answering without a supported rule could create an unsupported conclusion.",
+                action: "Rephrase the question around delivery, order intake, profitability, lost quoted opportunity, or workforce.",
+                decision: "Do not generate an unsupported management recommendation."
+            }];
+        }
+
+        function runDecisionAssistant() {
+            const query = document.getElementById('ai-query-input').value.trim();
+            if (!query) {
+                showToast('Please enter a query or select a template question first', 'info');
+                return;
+            }
+
+            const rows = getScopedRows();
+            if (rows.length === 0) {
+                showToast('No active dataset uploaded to analyze', 'error');
+                return;
+            }
+
+            const placeholder = document.getElementById('ai-placeholder');
+            const loading = document.getElementById('ai-loading');
+            const cardsWrapper = document.getElementById('ai-cards-wrapper');
+            const submitBtn = document.getElementById('ai-submit-btn');
+
+            placeholder.classList.add('hidden');
+            loading.classList.remove('hidden');
+            cardsWrapper.classList.add('hidden');
+            submitBtn.disabled = true;
+
+            const factMap = buildFactMap();
+
+            setTimeout(() => {
+                const decisions = evaluateDeterministicRules(query, factMap);
+                renderDecisionCards(decisions);
+                loading.classList.add('hidden');
+                cardsWrapper.classList.remove('hidden');
+                submitBtn.disabled = false;
+            }, 300);
+        }
+
+        function renderDecisionCards(decisions) {
+            const wrapper = document.getElementById('ai-cards-wrapper');
+            wrapper.innerHTML = '';
+
+            if (!Array.isArray(decisions) || decisions.length === 0) {
+                wrapper.innerHTML = `<div class="p-4 text-xs text-stone-500 bg-stone-50 rounded-lg border border-stone-200">No specific decision gaps found for this query context.</div>`;
+                return;
+            }
+
+            decisions.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'executive-card rounded-xl p-5 border border-stone-200 space-y-4';
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-stone-100 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-5 h-5 rounded-full bg-walnut-100 text-walnut-800 flex items-center justify-center text-xs font-bold">${index + 1}</span>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-stone-900">Executive Strategic Recommendation</h4>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-stone-100 text-stone-700 border border-stone-200">Verified Evidence</span>
+                    </div>
+
+                    <!-- 5-Step Matrix Stack -->
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
+                        
+                        <!-- Gap -->
+                        <div class="bg-stone-50 p-3 rounded-lg border border-terracotta-600/20">
+                            <span class="block text-[10px] font-bold uppercase tracking-wider text-terracotta-700 mb-1 flex items-center gap-1">
+                                Detected Gap
+                            </span>
+                            <p class="text-stone-800 leading-snug font-medium">${item.gap || 'N/A'}</p>
+                        </div>
+
+                        <!-- Evidence -->
+                        <div class="bg-stone-50 p-3 rounded-lg border border-stone-300">
+                            <span class="block text-[10px] font-bold uppercase tracking-wider text-stone-600 mb-1 flex items-center gap-1">
+                                Supporting Evidence
+                            </span>
+                            <p class="text-stone-700 font-mono text-[11px] leading-snug">${item.evidence || 'N/A'}</p>
+                        </div>
+
+                        <!-- Business Impact -->
+                        <div class="bg-stone-50 p-3 rounded-lg border border-amber-600/20">
+                            <span class="block text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-1 flex items-center gap-1">
+                                Business Impact
+                            </span>
+                            <p class="text-stone-800 leading-snug">${item.impact || 'N/A'}</p>
+                        </div>
+
+                        <!-- Recommended Action -->
+                        <div class="bg-stone-50 p-3 rounded-lg border border-walnut-600/20">
+                            <span class="block text-[10px] font-bold uppercase tracking-wider text-walnut-700 mb-1 flex items-center gap-1">
+                                Recommended Action
+                            </span>
+                            <p class="text-stone-800 leading-snug">${item.action || 'N/A'}</p>
+                        </div>
+
+                        <!-- Specific Decision -->
+                        <div class="bg-walnut-50 p-3 rounded-lg border border-walnut-600/40">
+                            <span class="block text-[10px] font-bold uppercase tracking-wider text-walnut-900 mb-1 flex items-center gap-1">
+                                Specific Decision
+                            </span>
+                            <p class="text-stone-900 font-semibold leading-snug">${item.decision || 'N/A'}</p>
+                        </div>
+                    </div>
+                `;
+
+                wrapper.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        function renderExplorerTable() {
+            const rows = getScopedRows();
+            const headers = getScopedHeaders();
+
+            const thead = document.getElementById('explorer-table-head');
+            const tbody = document.getElementById('explorer-table-body');
+            const countEl = document.getElementById('explorer-row-count');
+
+            if (!thead || !tbody) return;
+
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            if (rows.length === 0) {
+                if (countEl) countEl.textContent = 'Showing 0 rows';
+                return;
+            }
+
+            const trHead = document.createElement('tr');
+            headers.forEach(h => {
+                const th = document.createElement('th');
+                th.className = 'px-4 py-2.5 font-bold text-stone-700';
+                th.textContent = h;
+                trHead.appendChild(th);
+            });
+            thead.appendChild(trHead);
+
+            const previewRows = rows.slice(0, 500);
+            previewRows.forEach((row, i) => {
+                const tr = document.createElement('tr');
+                tr.className = i % 2 === 0 ? 'bg-white hover:bg-stone-50' : 'bg-stone-50/50 hover:bg-stone-50';
+
+                headers.forEach(h => {
+                    const td = document.createElement('td');
+                    td.className = 'px-4 py-2 border-t border-stone-200 text-stone-700 whitespace-nowrap';
+                    td.textContent = row[h] !== undefined && row[h] !== null ? String(row[h]) : '';
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+
+            if (countEl) countEl.textContent = `Showing ${previewRows.length.toLocaleString()} of ${rows.length.toLocaleString()} records`;
+        }
+
+        function filterExplorerTable() {
+            const filter = document.getElementById('table-search-input').value.toLowerCase();
+            const rows = document.querySelectorAll('#explorer-table-body tr');
+
+            rows.forEach(tr => {
+                const text = tr.textContent.toLowerCase();
+                tr.style.display = text.includes(filter) ? '' : 'none';
+            });
+        }
+
+        // Toast notification helper
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            
+            const colorClass = type === 'error' ? 'bg-terracotta-700 text-white' :
+                             type === 'success' ? 'bg-forest-700 text-white' :
+                             'bg-stone-800 text-stone-100';
+
+            toast.className = `p-3 px-4 rounded-md ${colorClass} text-xs font-semibold shadow-lg flex items-center space-x-2 pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0`;
+            
+            toast.innerHTML = `
+                <i data-lucide="${type === 'error' ? 'alert-circle' : type === 'success' ? 'check-circle' : 'info'}" class="w-4 h-4 flex-shrink-0"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
